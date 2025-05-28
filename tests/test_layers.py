@@ -1,5 +1,7 @@
 import torch
-
+import numpy as np
+import random
+import jax
 from experiments.utils import set_seed
 from nn.layers.bias_to_bias import BiasToBiasBlock
 from nn.layers.bias_to_weight import BiasToWeightBlock
@@ -14,7 +16,12 @@ from nn.layers.weight_to_weight import (
 )
 from nn.models import DWSModel, DWSModelForClassification
 
-set_seed(42)
+torch.set_default_dtype(torch.float64)
+jax.config.update("jax_enable_x64", True)
+
+torch.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
 
 
 def test_w_t_w_from_first():
@@ -643,3 +650,7 @@ def test_model_equivariance_downsample_sab():
         out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=0
     )
     assert torch.allclose(out_biases[3], out_biases_perm[3], atol=1e-4, rtol=0)
+
+
+if __name__ == "__main__":
+    test_model_equivariance_downsample()

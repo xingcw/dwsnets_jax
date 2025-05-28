@@ -1,9 +1,8 @@
 import jax
-import jax.numpy as jnp
 import numpy as np
 import torch
 import pytest
-from jax import random
+import random
 
 from nn.layers_jax.weight_to_weight_jax import (
     FromFirstLayer,
@@ -18,16 +17,22 @@ from nn.layers_jax.bias_to_weight_jax import BiasToWeightBlock
 from nn.layers_jax.weight_to_bias_jax import WeightToBiasBlock
 from nn.models_jax import DWSModel, DWSModelForClassification
 
+torch.set_default_dtype(torch.float64)
+jax.config.update("jax_enable_x64", True)
+
+torch.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
 
 def test_w_t_w_from_first():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     shapes = tuple(m.shape[1:3] for m in matrices)
 
@@ -40,13 +45,13 @@ def test_w_t_w_from_first():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = layer.init(key, matrices[0])
 
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
 
     out_perm = layer.apply(params, matrices[0][:, :, perm1, :])
     out = layer.apply(params, matrices[0])
@@ -55,13 +60,13 @@ def test_w_t_w_from_first():
 
 def test_w_t_w_to_first():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     shapes = tuple(m.shape[1:3] for m in matrices)
 
@@ -74,13 +79,13 @@ def test_w_t_w_to_first():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = layer.init(key, matrices[-1])
 
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
 
     out_perm = layer.apply(params, matrices[-1][:, perm4, :, :])
     out = layer.apply(params, matrices[-1])
@@ -89,13 +94,13 @@ def test_w_t_w_to_first():
 
 def test_w_t_w_from_last():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     shapes = tuple(m.shape[1:3] for m in matrices)
 
@@ -107,13 +112,13 @@ def test_w_t_w_from_last():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = layer.init(key, matrices[-1])
 
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
 
     out_perm = layer.apply(params, matrices[-1][:, perm4, :, :])
     out = layer.apply(params, matrices[-1])
@@ -124,13 +129,13 @@ def test_w_t_w_from_last():
 
 def test_w_t_w_to_last():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     shapes = tuple(m.shape[1:3] for m in matrices)
 
@@ -142,13 +147,13 @@ def test_w_t_w_to_last():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = layer.init(key, matrices[2])
 
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
 
     out_perm = layer.apply(params, matrices[2][:, perm2, :, :][:, :, perm3, :])
     out = layer.apply(params, matrices[2])
@@ -157,13 +162,13 @@ def test_w_t_w_to_last():
 
 def test_w_t_w_non_n():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     shapes = tuple(m.shape[1:3] for m in matrices)
 
@@ -175,13 +180,13 @@ def test_w_t_w_non_n():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = layer.init(key, matrices[1])
 
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
 
     out_perm = layer.apply(params, matrices[1][:, perm1, :, :][:, :, perm2, :])
     out = layer.apply(params, matrices[1])
@@ -192,13 +197,13 @@ def test_w_t_w_non_n():
 
 def test_weight_to_weight_block():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
 
     weight_block = WeightToWeightBlock(
@@ -208,16 +213,16 @@ def test_weight_to_weight_block():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = weight_block.init(key, matrices)
 
     out = weight_block.apply(params, matrices)
 
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
     out_perm = weight_block.apply(
         params,
         (
@@ -244,13 +249,13 @@ def test_weight_to_weight_block():
 
 def test_bias_to_bias_block():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
+        jax.random.normal(key, (4, d1, 12)),
+        jax.random.normal(key, (4, d2, 12)),
+        jax.random.normal(key, (4, d3, 12)),
+        jax.random.normal(key, (4, d4, 12)),
+        jax.random.normal(key, (4, d5, 12)),
     )
 
     bias_block = BiasToBiasBlock(
@@ -260,16 +265,16 @@ def test_bias_to_bias_block():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = bias_block.init(key, matrices)
 
     out = bias_block.apply(params, matrices)
 
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
     out_perm = bias_block.apply(
         params,
         (
@@ -290,13 +295,13 @@ def test_bias_to_bias_block():
 
 def test_bias_to_weight_block():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
+        jax.random.normal(key, (4, d1, 12)),
+        jax.random.normal(key, (4, d2, 12)),
+        jax.random.normal(key, (4, d3, 12)),
+        jax.random.normal(key, (4, d4, 12)),
+        jax.random.normal(key, (4, d5, 12)),
     )
     weights_shape = ((d0, d1), (d1, d2), (d2, d3), (d3, d4), (d4, d5))
 
@@ -308,16 +313,16 @@ def test_bias_to_weight_block():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = bias_block.init(key, matrices)
 
     out = bias_block.apply(params, matrices)
 
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
     out_perm = bias_block.apply(
         params,
         (
@@ -344,13 +349,13 @@ def test_bias_to_weight_block():
 
 def test_weight_to_bias_block():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+        jax.random.normal(key, (4, d0, d1, 12)),
+        jax.random.normal(key, (4, d1, d2, 12)),
+        jax.random.normal(key, (4, d2, d3, 12)),
+        jax.random.normal(key, (4, d3, d4, 12)),
+        jax.random.normal(key, (4, d4, d5, 12)),
     )
     bias_shapes = ((d1,), (d2,), (d3,), (d4,), (d5,))
 
@@ -362,16 +367,16 @@ def test_weight_to_bias_block():
     )
 
     # Initialize parameters
-    key = random.PRNGKey(0)
+    key = jax.random.PRNGKey(0)
     params = weight_block.init(key, matrices)
 
     out = weight_block.apply(params, matrices)
 
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = jax.random.permutation(key, d1)
+    perm2 = jax.random.permutation(key, d2)
+    perm3 = jax.random.permutation(key, d3)
+    perm4 = jax.random.permutation(key, d4)
     out_perm = weight_block.apply(
         params,
         (
@@ -392,260 +397,342 @@ def test_weight_to_bias_block():
 
 def test_model_invariance():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
-    matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+    weights = (
+        np.random.randn(4, d0, d1, 2).astype(np.float64),
+        np.random.randn(4, d1, d2, 2).astype(np.float64),
+        np.random.randn(4, d2, d3, 2).astype(np.float64),
+        np.random.randn(4, d3, d4, 2).astype(np.float64),
+        np.random.randn(4, d4, d5, 2).astype(np.float64),
     )
-    bias = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
-    )
-
-    model = DWSModel(
-        weight_shapes=tuple(m.shape[1:3] for m in matrices),
-        bias_shapes=tuple(b.shape[1:2] for b in bias),
-        input_features=12,
-        hidden_dim=64,
-        n_hidden=2,
+    biases = (
+        np.random.randn(4, d1, 2).astype(np.float64),
+        np.random.randn(4, d2, 2).astype(np.float64),
+        np.random.randn(4, d3, 2).astype(np.float64),
+        np.random.randn(4, d4, 2).astype(np.float64),
+        np.random.randn(4, d5, 2).astype(np.float64),
     )
 
-    # Initialize parameters
-    key = random.PRNGKey(0)
-    params = model.init(key, (matrices, bias))
-
-    out = model.apply(params, (matrices, bias))
-
+    model = DWSModelForClassification(
+        input_features=2,
+        n_classes=10,
+        weight_shapes=tuple(m.shape[1:3] for m in weights),
+        bias_shapes=tuple(m.shape[1:2] for m in biases),
+        hidden_dim=16,
+        dropout_rate=0.0,
+    )
+    key = jax.random.PRNGKey(0)
+    params = model.init(key, (weights, biases))
+    out = model.apply(params, (weights, biases))
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = np.random.permutation(d1)
+    perm2 = np.random.permutation(d2)
+    perm3 = np.random.permutation(d3)
+    perm4 = np.random.permutation(d4)
     out_perm = model.apply(
         params,
         (
             (
-                matrices[0][:, :, perm1, :],
-                matrices[1][:, perm1, :, :][:, :, perm2, :],
-                matrices[2][:, perm2, :, :][:, :, perm3, :],
-                matrices[3][:, perm3, :, :][:, :, perm4, :],
-                matrices[4][:, perm4, :, :],
+                weights[0][:, :, perm1, :],
+                weights[1][:, perm1, :, :][:, :, perm2, :],
+                weights[2][:, perm2, :, :][:, :, perm3, :],
+                weights[3][:, perm3, :, :][:, :, perm4, :],
+                weights[4][:, perm4, :, :],
             ),
             (
-                bias[0][:, perm1, :],
-                bias[1][:, perm2, :],
-                bias[2][:, perm3, :],
-                bias[3][:, perm4, :],
-                bias[4],
+                biases[0][:, perm1, :],
+                biases[1][:, perm2, :],
+                biases[2][:, perm3, :],
+                biases[3][:, perm4, :],
+                biases[4],
             ),
-        ),
+        )
     )
 
-    np.testing.assert_allclose(out[0][0][:, :, perm1, :], out_perm[0][0], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(
-        out[0][1][:, perm1, :, :][:, :, perm2, :], out_perm[0][1], rtol=1e-5, atol=1e-5
-    )
-    np.testing.assert_allclose(
-        out[0][2][:, perm2, :, :][:, :, perm3, :], out_perm[0][2], rtol=1e-5, atol=1e-5
-    )
-    np.testing.assert_allclose(
-        out[0][3][:, perm3, :, :][:, :, perm4, :], out_perm[0][3], rtol=1e-5, atol=1e-5
-    )
-    np.testing.assert_allclose(out[0][4][:, perm4, :, :], out_perm[0][4], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out[1][0][:, perm1, :], out_perm[1][0], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out[1][1][:, perm2, :], out_perm[1][1], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out[1][2][:, perm3, :], out_perm[1][2], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out[1][3][:, perm4, :], out_perm[1][3], rtol=1e-5, atol=1e-5)
-    np.testing.assert_allclose(out[1][4], out_perm[1][4], rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(out, out_perm, atol=1e-5, rtol=1e-5)
 
 
 def test_model_equivariance():
     d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
-    matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+    weights = (
+        np.random.randn(4, d0, d1, 2).astype(np.float64),
+        np.random.randn(4, d1, d2, 2).astype(np.float64),
+        np.random.randn(4, d2, d3, 2).astype(np.float64),
+        np.random.randn(4, d3, d4, 2).astype(np.float64),
+        np.random.randn(4, d4, d5, 2).astype(np.float64),
     )
-    bias = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
-    )
-
-    model = DWSModelForClassification(
-        weight_shapes=tuple(m.shape[1:3] for m in matrices),
-        bias_shapes=tuple(b.shape[1:2] for b in bias),
-        input_features=12,
-        hidden_dim=64,
-        n_hidden=2,
-        n_classes=10,
+    biases = (
+        np.random.randn(4, d1, 2).astype(np.float64),
+        np.random.randn(4, d2, 2).astype(np.float64),
+        np.random.randn(4, d3, 2).astype(np.float64),
+        np.random.randn(4, d4, 2).astype(np.float64),
+        np.random.randn(4, d5, 2).astype(np.float64),
     )
 
-    # Initialize parameters
-    key = random.PRNGKey(0)
-    params = model.init(key, (matrices, bias))
-
-    out = model.apply(params, (matrices, bias))
-
+    model = DWSModel(
+        input_features=2,
+        output_features=8,
+        weight_shapes=tuple(m.shape[1:3] for m in weights),
+        bias_shapes=tuple(m.shape[1:2] for m in biases),
+        hidden_dim=16,
+        dropout_rate=0.0,
+        bias=True,
+    )
+    key = jax.random.PRNGKey(0)
+    params = model.init(key, (weights, biases))
+    out = model.apply(params, (weights, biases))
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = np.random.permutation(d1)
+    perm2 = np.random.permutation(d2)
+    perm3 = np.random.permutation(d3)
+    perm4 = np.random.permutation(d4)
     out_perm = model.apply(
         params,
         (
             (
-                matrices[0][:, :, perm1, :],
-                matrices[1][:, perm1, :, :][:, :, perm2, :],
-                matrices[2][:, perm2, :, :][:, :, perm3, :],
-                matrices[3][:, perm3, :, :][:, :, perm4, :],
-                matrices[4][:, perm4, :, :],
+                weights[0][:, :, perm1, :],
+                weights[1][:, perm1, :, :][:, :, perm2, :],
+                weights[2][:, perm2, :, :][:, :, perm3, :],
+                weights[3][:, perm3, :, :][:, :, perm4, :],
+                weights[4][:, perm4, :, :],
             ),
             (
-                bias[0][:, perm1, :],
-                bias[1][:, perm2, :],
-                bias[2][:, perm3, :],
-                bias[3][:, perm4, :],
-                bias[4],
+                biases[0][:, perm1, :],
+                biases[1][:, perm2, :],
+                biases[2][:, perm3, :],
+                biases[3][:, perm4, :],
+                biases[4],
             ),
-        ),
+        )
     )
 
-    np.testing.assert_allclose(out, out_perm, rtol=1e-5, atol=1e-5)
+    out_weights = out[0]
+    out_weights_perm = out_perm[0]
+    np.testing.assert_allclose(
+        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_weights[1][:, perm1, :, :][:, :, perm2, :],
+        out_weights_perm[1],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[2][:, perm2, :, :][:, :, perm3, :],
+        out_weights_perm[2],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[3][:, perm3, :, :][:, :, perm4, :],
+        out_weights_perm[3],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[4][:, perm4, :, :], out_weights_perm[4], atol=1e-4, rtol=1e-5
+    )
+
+    out_biases = out[1]
+    out_biases_perm = out_perm[1]
+    np.testing.assert_allclose(
+        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[3][:, perm4, :], out_biases_perm[3], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(out_biases[4], out_biases_perm[4], atol=1e-4, rtol=1e-5)
 
 
 def test_model_equivariance_downsample():
-    d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
-    matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+    d0, d1, d2, d3, d4, d5 = 64, 32, 32, 32, 32, 3
+    weights = (
+        np.random.randn(4, d0, d1, 2),
+        np.random.randn(4, d1, d2, 2),
+        np.random.randn(4, d2, d3, 2),
+        np.random.randn(4, d3, d4, 2),
+        np.random.randn(4, d4, d5, 2),
     )
-    bias = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
+    biases = (
+        np.random.randn(4, d1, 2),
+        np.random.randn(4, d2, 2),
+        np.random.randn(4, d3, 2),
+        np.random.randn(4, d4, 2),
+        np.random.randn(4, d5, 2),
     )
 
-    model = DWSModelForClassification(
-        weight_shapes=tuple(m.shape[1:3] for m in matrices),
-        bias_shapes=tuple(b.shape[1:2] for b in bias),
-        input_features=12,
-        hidden_dim=64,
-        n_hidden=2,
-        n_classes=10,
+    model = DWSModel(
+        input_features=2,
+        output_features=8,
+        weight_shapes=tuple(m.shape[1:3] for m in weights),
+        bias_shapes=tuple(m.shape[1:2] for m in biases),
+        hidden_dim=16,
         input_dim_downsample=16,
+        dropout_rate=0.0,
     )
-
-    # Initialize parameters
-    key = random.PRNGKey(0)
-    params = model.init(key, (matrices, bias))
-
-    out = model.apply(params, (matrices, bias))
-
+    key = jax.random.PRNGKey(0)
+    params = model.init(key, (weights, biases))
+    out = model.apply(params, (weights, biases))
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = np.random.permutation(d1)
+    perm2 = np.random.permutation(d2)
+    perm3 = np.random.permutation(d3)
+    perm4 = np.random.permutation(d4)
     out_perm = model.apply(
         params,
         (
             (
-                matrices[0][:, :, perm1, :],
-                matrices[1][:, perm1, :, :][:, :, perm2, :],
-                matrices[2][:, perm2, :, :][:, :, perm3, :],
-                matrices[3][:, perm3, :, :][:, :, perm4, :],
-                matrices[4][:, perm4, :, :],
+                weights[0][:, :, perm1, :],
+                weights[1][:, perm1, :, :][:, :, perm2, :],
+                weights[2][:, perm2, :, :][:, :, perm3, :],
+                weights[3][:, perm3, :, :][:, :, perm4, :],
+                weights[4][:, perm4, :, :],
             ),
             (
-                bias[0][:, perm1, :],
-                bias[1][:, perm2, :],
-                bias[2][:, perm3, :],
-                bias[3][:, perm4, :],
-                bias[4],
+                biases[0][:, perm1, :],
+                biases[1][:, perm2, :],
+                biases[2][:, perm3, :],
+                biases[3][:, perm4, :],
+                biases[4],
             ),
-        ),
+        )
     )
 
-    np.testing.assert_allclose(out, out_perm, rtol=1e-5, atol=1e-5)
+    out_weights = out[0]
+    out_weights_perm = out_perm[0]
+    np.testing.assert_allclose(
+        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_weights[1][:, perm1, :, :][:, :, perm2, :],
+        out_weights_perm[1],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[2][:, perm2, :, :][:, :, perm3, :],
+        out_weights_perm[2],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[3][:, perm3, :, :][:, :, perm4, :],
+        out_weights_perm[3],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[4][:, perm4, :, :], out_weights_perm[4], atol=1e-4, rtol=1e-5
+    )
+
+    out_biases = out[1]
+    out_biases_perm = out_perm[1]
+    np.testing.assert_allclose(
+        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[3][:, perm4, :], out_biases_perm[3], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(out_biases[4], out_biases_perm[4], atol=1e-4, rtol=1e-5)
 
 
 def test_model_equivariance_downsample_sab():
-    d0, d1, d2, d3, d4, d5 = 2, 32, 32, 32, 32, 3
-    key = random.PRNGKey(0)
-    matrices = (
-        random.normal(key, (4, d0, d1, 12)),
-        random.normal(key, (4, d1, d2, 12)),
-        random.normal(key, (4, d2, d3, 12)),
-        random.normal(key, (4, d3, d4, 12)),
-        random.normal(key, (4, d4, d5, 12)),
+    d0, d1, d2, d3, d4 = 28 * 28, 128, 128, 128, 10
+    weights = (
+        np.random.randn(4, d0, d1, 1).astype(np.float64),
+        np.random.randn(4, d1, d2, 1).astype(np.float64),
+        np.random.randn(4, d2, d3, 1).astype(np.float64),
+        np.random.randn(4, d3, d4, 1).astype(np.float64),
     )
-    bias = (
-        random.normal(key, (4, d1, 12)),
-        random.normal(key, (4, d2, 12)),
-        random.normal(key, (4, d3, 12)),
-        random.normal(key, (4, d4, 12)),
-        random.normal(key, (4, d5, 12)),
+    biases = (
+        np.random.randn(4, d1, 1).astype(np.float64),
+        np.random.randn(4, d2, 1).astype(np.float64),
+        np.random.randn(4, d3, 1).astype(np.float64),
+        np.random.randn(4, d4, 1).astype(np.float64),
     )
 
-    model = DWSModelForClassification(
-        weight_shapes=tuple(m.shape[1:3] for m in matrices),
-        bias_shapes=tuple(b.shape[1:2] for b in bias),
-        input_features=12,
+    model = DWSModel(
+        input_features=1,
+        output_features=1,
+        weight_shapes=tuple(m.shape[1:3] for m in weights),
+        bias_shapes=tuple(m.shape[1:2] for m in biases),
         hidden_dim=64,
-        n_hidden=2,
-        n_classes=10,
         input_dim_downsample=16,
-        set_layer="sab",
+        dropout_rate=0.0,
+        add_skip=True,
     )
-
-    # Initialize parameters
-    key = random.PRNGKey(0)
-    params = model.init(key, (matrices, bias))
-
-    out = model.apply(params, (matrices, bias))
-
+    key = jax.random.PRNGKey(0)
+    params = model.init(key, (weights, biases))
+    out = model.apply(params, (weights, biases))
     # perm test
-    perm1 = random.permutation(key, d1)
-    perm2 = random.permutation(key, d2)
-    perm3 = random.permutation(key, d3)
-    perm4 = random.permutation(key, d4)
+    perm1 = np.random.permutation(d1)
+    perm2 = np.random.permutation(d2)
+    perm3 = np.random.permutation(d3)
+    perm4 = np.random.permutation(d4)
     out_perm = model.apply(
         params,
         (
             (
-                matrices[0][:, :, perm1, :],
-                matrices[1][:, perm1, :, :][:, :, perm2, :],
-                matrices[2][:, perm2, :, :][:, :, perm3, :],
-                matrices[3][:, perm3, :, :][:, :, perm4, :],
-                matrices[4][:, perm4, :, :],
+                weights[0][:, :, perm1, :],
+                weights[1][:, perm1, :, :][:, :, perm2, :],
+                weights[2][:, perm2, :, :][:, :, perm3, :],
+                weights[3][:, perm3, :, :],
             ),
             (
-                bias[0][:, perm1, :],
-                bias[1][:, perm2, :],
-                bias[2][:, perm3, :],
-                bias[3][:, perm4, :],
-                bias[4],
+                biases[0][:, perm1, :],
+                biases[1][:, perm2, :],
+                biases[2][:, perm3, :],
+                biases[3],
             ),
-        ),
+        )
     )
 
-    np.testing.assert_allclose(out, out_perm, rtol=1e-5, atol=1e-5) 
+    out_weights = out[0]
+    out_weights_perm = out_perm[0]
+    np.testing.assert_allclose(
+        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_weights[1][:, perm1, :, :][:, :, perm2, :],
+        out_weights_perm[1],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[2][:, perm2, :, :][:, :, perm3, :],
+        out_weights_perm[2],
+        atol=1e-4,
+        rtol=1e-5,
+    )
+    np.testing.assert_allclose(
+        out_weights[3][:, perm3, :, :], out_weights_perm[3], atol=1e-4, rtol=1e-5
+    )
+
+    out_biases = out[1]
+    out_biases_perm = out_perm[1]
+    np.testing.assert_allclose(
+        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(
+        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=1e-5
+    )
+    np.testing.assert_allclose(out_biases[3], out_biases_perm[3], atol=1e-4, rtol=1e-5)
+
+
+if __name__ == "__main__":
+
+    test_model_equivariance_downsample()

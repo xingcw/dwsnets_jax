@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import torch
+import random
 import pytest
 from nn.layers.weight_to_weight import (
     GeneralMatrixSetLayer as TorchGeneralMatrixSetLayer,
@@ -23,6 +24,13 @@ from nn.layers_jax.weight_to_weight_jax import (
     NonNeighborInternalLayer as JaxNonNeighborInternalLayer,
     WeightToWeightBlock as JaxWeightToWeightBlock,
 )
+
+torch.set_default_dtype(torch.float64)
+jax.config.update("jax_enable_x64", True)
+
+torch.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
 
 def test_general_matrix_set_layer():
     # Test data

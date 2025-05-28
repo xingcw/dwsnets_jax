@@ -1,9 +1,8 @@
-from typing import Optional, Tuple
-
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
-from jax import random
+from typing import Optional, Tuple
+
 
 class BaseLayer(nn.Module):
     in_features: int
@@ -136,7 +135,8 @@ class SetLayer(BaseLayer):
         elif self.reduction == "sum":
             xm = jnp.sum(x, axis=1, keepdims=True)
         elif self.reduction == "attn":
-            xm = self.attn(x.transpose(0, 2, 1), keepdims=True).transpose(0, 2, 1)
+            xm = self.attn(jnp.swapaxes(x, -1, -2), keepdims=True)
+            xm = jnp.swapaxes(xm, -1, -2)
         else:
             xm = jnp.max(x, axis=1, keepdims=True)
 
@@ -181,7 +181,13 @@ class Attn(nn.Module):
         # Note: reduction is applied to last dim. For example for (bs, d, d') we compute d' attn weights
         # by multiplying over d.
             
-        attn = jnp.einsum('...dp,d->...p', x, self.query)
+        attn = jnp.sum(jnp.swapaxes(x, -1, -2) * self.query, axis=-1)
         attn = jax.nn.softmax(attn, axis=-1)
-        output = jnp.einsum('...dp,...p->...d', x, attn)
-        return jnp.expand_dims(output, -1) if keepdims else output
+        if x.ndim == 3:
+            attn = jnp.expand_dims(attn, 1)
+        elif x.ndim == 4:
+            attn = jnp.expand_dims(attn, 2)
+        else:
+            raise ValueError(f"invalid input dimension, got {x.ndim}")
+        output = jnp.sum(x * attn, axis=-1, keepdims=keepdims)
+        return output

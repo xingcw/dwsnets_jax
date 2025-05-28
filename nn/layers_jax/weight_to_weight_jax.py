@@ -207,9 +207,9 @@ class SetKroneckerSetLayer(BaseLayer):
         shapes = x.shape
         bs = shapes[0]
         # all
-        for layer in self.lin_all:
-            x = layer(x)
         out_all = x
+        for layer in self.lin_all:
+            out_all = layer(out_all)
         # rows
         pooled_rows = self._reduction(
             x, axis=1, keepdims=True

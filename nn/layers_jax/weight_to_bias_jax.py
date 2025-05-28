@@ -1,12 +1,8 @@
-from typing import Optional, Tuple
+from typing import Tuple
 from dataclasses import field
-
-import jax
 import jax.numpy as jnp
-from flax import linen as nn
-from jax import random
-
 from nn.layers_jax.base_jax import BaseLayer, GeneralSetLayer
+
 
 class SameLayer(BaseLayer):
     """Mapping Wi -> bi"""
@@ -157,7 +153,7 @@ class NonNeighborInternalLayer(BaseLayer):
         elif self.last_dim_is_output:
             # j = L-1, i != 0
             in_features = self.in_features  # in_features
-            out_features = self.out_features  # out_features
+            out_features = self.out_features * self.out_shape[-1]  # out_features * dL
 
         else:
             # i != 0, L-1, j != L-1

@@ -35,6 +35,15 @@ from .weight_to_weight_jax import (
     WeightToWeightBlock,
 )
 
+from .layers_jax import (
+    BN,
+    DownSampleDWSLayer,
+    Dropout,
+    DWSLayer,
+    InvariantLayer,
+    ReLU,
+)
+
 __all__ = [
     'BaseLayer',
     'MAB',
@@ -57,4 +66,10 @@ __all__ = [
     'FromLastLayer',
     'ToLastLayer',
     'WeightToWeightBlock',
+    'BN',
+    'DownSampleDWSLayer',
+    'Dropout',
+    'DWSLayer',
+    'InvariantLayer',
+    'ReLU',
 ] 

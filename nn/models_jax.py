@@ -24,24 +24,26 @@ class MLPModel(nn.Module):
 
     def setup(self):
         # Create layers
-        self.layers = []
+        layers = []
         
         # First layer
-        self.layers.append(nn.Dense(self.hidden_dim))
-        self.layers.append(nn.relu)
+        layers.append(nn.Dense(self.hidden_dim))
+        layers.append(nn.relu)
         
         # Hidden layers
         for i in range(self.n_hidden):
             if i < self.n_hidden - 1:
                 if not self.bn:
-                    self.layers.append(nn.Dense(self.hidden_dim))
-                    self.layers.append(nn.relu)
+                    layers.append(nn.Dense(self.hidden_dim))
+                    layers.append(nn.relu)
                 else:
-                    self.layers.append(nn.Dense(self.hidden_dim))
-                    self.layers.append(nn.BatchNorm())
-                    self.layers.append(nn.relu)
+                    layers.append(nn.Dense(self.hidden_dim))
+                    layers.append(nn.BatchNorm())
+                    layers.append(nn.relu)
             else:
-                self.layers.append(nn.Dense(self.in_dim))
+                layers.append(nn.Dense(self.in_dim))
+
+        self.layers = layers
 
     def _init_model_params(self, params, scale):
         # Initialize parameters with Xavier initialization
@@ -72,7 +74,7 @@ class MLPModel(nn.Module):
         for layer in self.layers:
             weight = layer(weight)
             
-        n_weights = sum([w.size for w in weight_shape])
+        n_weights = sum([w[0].size for w in x[0]])
         weights = weight[:, :n_weights]
         biases = weight[:, n_weights:]
         
@@ -153,20 +155,20 @@ class DWSModel(nn.Module):
 
     def setup(self):
         assert len(self.weight_shapes) > 2, "the current implementation only support input networks with M>2 layers."
-
-        if self.output_features is None:
-            self.output_features = self.hidden_dim
+        assert self.output_features is not None, "output_features must be specified. use hidden_dim if output_features is not specified."
 
         if self.add_skip:
             self.skip = nn.Dense(
                 self.output_features,
                 use_bias=self.bias,
-                kernel_init=lambda key, shape: jnp.ones(shape) / jnp.prod(jnp.array(shape)),
-                bias_init=lambda key, shape: jnp.zeros(shape),
+                kernel_init=nn.initializers.ones,  # use for testing
+                bias_init=nn.initializers.zeros,   # use for testing
+                # kernel_init=lambda key, shape: jnp.ones(shape) / jnp.prod(jnp.array(shape)),
+                # bias_init=lambda key, shape: jnp.zeros(shape),
             )
 
         if self.input_dim_downsample is None:
-            self.layers = [
+            layers = [
                 DWSLayer(
                     weight_shapes=self.weight_shapes,
                     bias_shapes=self.bias_shapes,
@@ -186,9 +188,9 @@ class DWSModel(nn.Module):
             
             for i in range(self.n_hidden):
                 if self.bn:
-                    self.layers.append(BN(self.hidden_dim, len(self.weight_shapes), len(self.bias_shapes)))
+                    layers.append(BN(self.hidden_dim, len(self.weight_shapes), len(self.bias_shapes)))
 
-                self.layers.extend([
+                layers.extend([
                     ReLU(),
                     Dropout(self.dropout_rate),
                     DWSLayer(
@@ -208,9 +210,12 @@ class DWSModel(nn.Module):
                     ),
                 ])
         else:
-            self.layers = [
+            new_weight_shapes = list(self.weight_shapes)
+            new_weight_shapes[0] = (self.input_dim_downsample, self.weight_shapes[0][1])
+            layers = [
                 DownSampleDWSLayer(
-                    weight_shapes=self.weight_shapes,
+                    original_weight_shapes=self.weight_shapes,
+                    weight_shapes=tuple(new_weight_shapes),
                     bias_shapes=self.bias_shapes,
                     in_features=self.input_features,
                     out_features=self.hidden_dim,
@@ -225,17 +230,16 @@ class DWSModel(nn.Module):
                     init_off_diag_scale_penalty=self.init_off_diag_scale_penalty,
                     diagonal=self.diagonal,
                 ),
-            ]
-            
+            ]            
             for i in range(self.n_hidden):
                 if self.bn:
-                    self.layers.append(BN(self.hidden_dim, len(self.weight_shapes), len(self.bias_shapes)))
-
-                self.layers.extend([
+                    layers.append(BN(self.hidden_dim, len(self.weight_shapes), len(self.bias_shapes)))
+                layers.extend([
                     ReLU(),
                     Dropout(self.dropout_rate),
                     DownSampleDWSLayer(
-                        weight_shapes=self.weight_shapes,
+                        original_weight_shapes=self.weight_shapes,
+                        weight_shapes=tuple(new_weight_shapes),
                         bias_shapes=self.bias_shapes,
                         in_features=self.hidden_dim,
                         out_features=self.hidden_dim if i != (self.n_hidden - 1) else self.output_features,
@@ -251,6 +255,7 @@ class DWSModel(nn.Module):
                         diagonal=self.diagonal,
                     ),
                 ])
+        self.layers = layers
 
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]]):
         out = x
@@ -296,7 +301,7 @@ class DWSModelForClassification(nn.Module):
             input_features=self.input_features,
             hidden_dim=self.hidden_dim,
             n_hidden=self.n_hidden,
-            output_features=self.equiv_out_features,
+            output_features=self.hidden_dim if self.equiv_out_features is None else self.equiv_out_features,
             reduction=self.reduction,
             bias=self.bias,
             n_fc_layers=self.n_fc_layers,
@@ -312,7 +317,11 @@ class DWSModelForClassification(nn.Module):
             diagonal=self.diagonal,
         )
         
-        self.classifier = nn.Dense(self.n_classes)
+        self.classifier = nn.Dense(
+            self.n_classes,
+            kernel_init=nn.initializers.ones,  # use for testing
+            bias_init=nn.initializers.zeros,   # use for testing
+        )
 
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]], return_equiv=False):
         equiv_out = self.dws_model(x)
@@ -324,3 +333,30 @@ class DWSModelForClassification(nn.Module):
         if return_equiv:
             return out, equiv_out
         return out 
+
+
+if __name__ == "__main__":
+    key = jax.random.PRNGKey(0)
+    weights = (
+        jax.random.normal(key, (4, 784, 128, 1)),
+        jax.random.normal(key, (4, 128, 128, 1)),
+        jax.random.normal(key, (4, 128, 10, 1)),
+    )
+    biases = (
+        jax.random.normal(key, (4, 128, 1)),
+        jax.random.normal(key, (4, 128, 1)),
+        jax.random.normal(key, (4, 10, 1)),
+    )
+    in_dim = sum([w[0, :].size for w in weights]) + sum(
+        [w[0, :].size for w in biases]
+    )
+    weight_shapes = tuple(w.shape[1:3] for w in weights)
+    bias_shapes = tuple(b.shape[1:2] for b in biases)
+
+    model = MLPModel(in_dim=in_dim, hidden_dim=128, n_hidden=2)
+    params = model.init(key, (weights, biases))
+    out = model.apply(params, (weights, biases))
+
+    for weight, bias in zip(out[0], out[1]):
+        for w, b in zip(weight, bias):
+            print(w.shape, b.shape)

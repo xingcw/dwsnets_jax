@@ -313,12 +313,9 @@ class NonNeighborInternalLayer(BaseLayer):
             # i != L-1, 0 and  j != L-1
             # (bs, di, d{i+1}, in_features)
             # (bs, in_features, di * d{i+1})
-            print("torch step 1: ", x.shape)
             x = x.permute(0, 3, 1, 2).flatten(start_dim=2)
-            print("torch step 2: ", x.shape)
             # (bs, in_features)
             x = self._reduction(x, dim=2)
-            print("torch step 3: ", x.shape)
             # (bs, out_features)
             x = self.layer(x)
             # (bs, d{j+1}, out_features)

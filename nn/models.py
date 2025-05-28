@@ -137,7 +137,8 @@ class DWSModel(nn.Module):
                 bias=bias
             )
             with torch.no_grad():
-                torch.nn.init.constant_(self.skip.weight, 1. / self.skip.weight.numel())
+                torch.nn.init.ones_(self.skip.weight) # for testing
+                # torch.nn.init.constant_(self.skip.weight, 1. / self.skip.weight.numel())
                 torch.nn.init.constant_(self.skip.bias, 0.)
 
         if input_dim_downsample is None:
@@ -325,10 +326,20 @@ if __name__ == "__main__":
         torch.randn(4, 128, 128, 1),
         torch.randn(4, 128, 10, 1),
     )
-    biases = (torch.randn(4, 128, 1), torch.randn(4, 128, 1), torch.randn(4, 10, 1))
+    biases = (
+        torch.randn(4, 128, 1),
+        torch.randn(4, 128, 1),
+        torch.randn(4, 10, 1),
+    )
     in_dim = sum([w[0, :].numel() for w in weights]) + sum(
         [w[0, :].numel() for w in biases]
     )
     weight_shapes = tuple(w.shape[1:3] for w in weights)
     bias_shapes = tuple(b.shape[1:2] for b in biases)
     n_params = sum([i.numel() for i in weight_shapes + bias_shapes])
+
+    model = MLPModel(in_dim=in_dim, hidden_dim=128, n_hidden=2)
+    output = model((weights, biases))
+    for weight, bias in zip(output[0], output[1]):
+        for w, b in zip(weight, bias):
+            print(w.shape, b.shape)

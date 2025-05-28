@@ -2,12 +2,17 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import torch
+import random
 import pytest
 from nn.inr import INR as TorchINR
 from nn.inr_jax import INR as JaxINR
 
+torch.set_default_dtype(torch.float64)
 jax.config.update("jax_enable_x64", True)
 
+torch.manual_seed(0)
+np.random.seed(0)
+random.seed(0)
 
 def test_sine_activation():
     # Test data
