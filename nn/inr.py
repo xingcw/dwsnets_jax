@@ -47,6 +47,7 @@ class Siren(nn.Module):
 
         w_std = (1 / dim) if self.is_first else (math.sqrt(c / dim) / w0)
         weight.uniform_(-w_std, w_std)
+        # weight.fill_(w_std)   # use this for testing
 
         if bias is not None:
             # bias.uniform_(-w_std, w_std)
@@ -87,7 +88,10 @@ class INR(nn.Module):
             self.layers = [Siren(dim_in=in_dim, dim_out=hidden_dim)]
         for i in range(n_layers - 2):
             self.layers.append(Siren(hidden_dim, hidden_dim))
-        self.layers.append(nn.Linear(hidden_dim, out_channels))
+        dense = nn.Linear(hidden_dim, out_channels)
+        # dense.weight.data.fill_(1.0)  # use this for testing
+        # dense.bias.data.fill_(0.0)  # use this for testing
+        self.layers.append(dense)
         self.seq = nn.Sequential(*self.layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

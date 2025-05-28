@@ -34,20 +34,19 @@ class BaseLayer(nn.Module):
         self.num_heads = num_heads
 
     def _get_mlp(self, in_features, out_features, bias=False):
+
         layers = [nn.Linear(in_features, out_features, bias=bias)]
         for _ in range(self.n_fc_layers - 1):
             layers.extend([nn.ReLU(), nn.Linear(out_features, out_features, bias=bias)])
-        return nn.Sequential(*layers)
+        
+        # use this for testing
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                layer.weight.data.fill_(1.0)
+                if bias:
+                    layer.bias.data.fill_(0.0)
 
-    def _init_bias(self, row_equal, col_equal, row_dim, col_dim):
-        if self.bias:
-            b = torch.empty(
-                1 if row_equal else row_dim,
-                1 if col_equal else col_dim,
-                self.out_features,
-            )
-            b.uniform_(-1e-2, 1e-2)
-            self.b = nn.Parameter(b)
+        return nn.Sequential(*layers)
 
     def _reduction(self, x: torch.tensor, dim=1, keepdim=False):
         if self.reduction == "mean":
@@ -79,6 +78,16 @@ class MAB(nn.Module):
             self.ln0 = nn.LayerNorm(dim_V)
             self.ln1 = nn.LayerNorm(dim_V)
         self.fc_o = nn.Linear(dim_V, dim_V)
+
+        # use this for testing
+        self.fc_q.weight.data.fill_(1.0)
+        self.fc_q.bias.data.fill_(0.0)
+        self.fc_k.weight.data.fill_(1.0)
+        self.fc_k.bias.data.fill_(0.0)
+        self.fc_v.weight.data.fill_(1.0)
+        self.fc_v.bias.data.fill_(0.0)
+        self.fc_o.weight.data.fill_(1.0)
+        self.fc_o.bias.data.fill_(0.0)
 
     def forward(self, Q, K):
         Q = self.fc_q(Q)
@@ -191,15 +200,13 @@ class Attn(nn.Module):
         super().__init__()
         self.dim = dim
         self.query = nn.Parameter(
-            torch.ones(
-                dim,
-            )
+            torch.ones(dim)
         )
 
     def forward(self, x, keepdim=False):
         # Note: reduction is applied to last dim. For example for (bs, d, d') we compute d' attn weights
         # by multiplying over d.
-        attn = (x.transpose(-1, -2) * self.query).sum(-1)
+        attn = x.transpose(-1, -2) @ self.query
         attn = F.softmax(attn, dim=-1)
         # todo: change to attn.unsqueeze(-2) ?
         if x.ndim == 3:
@@ -207,6 +214,6 @@ class Attn(nn.Module):
         elif x.ndim == 4:
             attn = attn.unsqueeze(2)
 
-        output = (x * attn).sum(-1, keepdim=keepdim)
+        output = x @ attn.transpose(-1, -2)
 
-        return output
+        return output if keepdim else output.squeeze(-1)
