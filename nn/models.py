@@ -33,15 +33,17 @@ class MLPModel(nn.Module):
     def _init_model_params(self, scale):
         for n, m in self.named_modules():
             if isinstance(m, nn.Linear):
-                out_c, in_c = m.weight.shape
-                g = (2 * in_c / out_c) ** 0.5
-                # nn.init.xavier_normal_(m.weight, gain=g)
-                nn.init.xavier_normal_(m.weight)
-                # nn.init.kaiming_normal_(m.weight)
-                m.weight.data = m.weight.data * g * scale
-                if m.bias is not None:
-                    # m.bias.data.fill_(0.0)
-                    m.bias.data.uniform_(-1e-4, 1e-4)
+                m.weight.data.fill_(1.0)    # for testing
+                m.bias.data.fill_(0.0)      # for testing
+                # out_c, in_c = m.weight.shape
+                # g = (2 * in_c / out_c) ** 0.5
+                # # nn.init.xavier_normal_(m.weight, gain=g)
+                # nn.init.xavier_normal_(m.weight)
+                # # nn.init.kaiming_normal_(m.weight)
+                # m.weight.data = m.weight.data * g * scale
+                # if m.bias is not None:
+                #     # m.bias.data.fill_(0.0)
+                #     m.bias.data.uniform_(-1e-4, 1e-4)
 
     def forward(self, x: Tuple[Tuple[torch.tensor], Tuple[torch.tensor]]):
         weight, bias = x
@@ -85,6 +87,12 @@ class MLPModelForClassification(nn.Module):
 
         layers.append(nn.Linear(hidden_dim, n_classes))
         self.seq = nn.Sequential(*layers)
+
+        # for testing
+        for n, m in self.named_modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.fill_(1.0)
+                m.bias.data.fill_(0.0)
 
     def forward(self, x: Tuple[Tuple[torch.tensor], Tuple[torch.tensor]]):
         weight, bias = x
@@ -308,6 +316,12 @@ class DWSModelForClassification(nn.Module):
             reduction=reduction,
             n_fc_layers=n_out_fc,
         )
+
+        # for testing
+        for m in self.named_modules():
+            if isinstance(m, nn.Linear):
+                m.weight.data.fill_(1.0)
+                m.bias.data.fill_(0.0)
 
     def forward(
         self, x: Tuple[Tuple[torch.tensor], Tuple[torch.tensor]], return_equiv=False

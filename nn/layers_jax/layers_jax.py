@@ -151,16 +151,6 @@ class DWSLayer(BaseLayer):
         if self.add_skip:
             self.skip = self._get_mlp(self.in_features, self.out_features, bias=self.bias)
 
-    def _apply_off_diag_penalty(self, name: str) -> bool:
-        if "weight_to_weight" in name or "bias_to_bias" in name:
-            return (len(set(name.split(".")[2].split("_"))) == 2) or ("skip" not in name)
-        return True
-
-    def _init_model_params(self, scale: float, off_diag_penalty: float = 1.0):
-        # In JAX/Flax, initialization is handled through the module's setup
-        # The actual initialization will be done when the module is created
-        pass
-
     @nn.compact
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]]):
         weights, biases = x
@@ -266,12 +256,18 @@ class InvariantLayer(BaseLayer):
 
     def setup(self):
         n_layers = len(self.weight_shapes) + len(self.bias_shapes)
-        self.layer = self._get_mlp(
+        self.mlp_layers = self._get_mlp(
             in_features=(
                 self.in_features * (n_layers - 3)
-                + self.in_features * self.weight_shapes[0][0]
-                + self.in_features * self.weight_shapes[-1][-1]
-                + self.in_features * self.bias_shapes[-1][-1]
+                +
+                # in_features * d0 - first weight matrix
+                self.in_features * self.weight_shapes[0][0]
+                +
+                # in_features * dL - last weight matrix
+                self.in_features * self.weight_shapes[-1][-1]
+                +
+                # in_features * dL - last bias
+                self.in_features * self.bias_shapes[-1][-1]
             ),
             out_features=self.out_features,
             bias=self.bias,
@@ -283,33 +279,42 @@ class InvariantLayer(BaseLayer):
         
         # Handle first and last matrices specially
         first_w, last_w = weights[0], weights[-1]
-        pooled_first_w = first_w.transpose(0, 2, 1, 3).reshape(first_w.shape[0], -1, first_w.shape[1] * first_w.shape[2])
-        pooled_last_w = last_w.reshape(last_w.shape[0], -1, last_w.shape[1] * last_w.shape[2])
-        
+        pooled_first_w = first_w.transpose(0, 2, 1, 3)
+        # (bs, d1, d0 * in_features)
+        pooled_first_w = pooled_first_w.reshape(pooled_first_w.shape[0], pooled_first_w.shape[1], -1)
+        # (bs, d{L-1}, dL * in_features)
+        pooled_last_w = last_w.reshape(last_w.shape[0], last_w.shape[1], -1)
+        # (bs, d0 * in_features)
         pooled_first_w = self._reduction(pooled_first_w, axis=1)
+        # (bs, dL * in_features)
         pooled_last_w = self._reduction(pooled_last_w, axis=1)
         
         # Handle last bias specially
         last_b = biases[-1]
+        # (bs, dL * in_features)
         pooled_last_b = last_b.reshape(last_b.shape[0], -1)
 
         # Concatenate intermediate weights
         pooled_weights = jnp.concatenate([
             self._reduction(w.transpose(0, 3, 1, 2).reshape(w.shape[0], -1, w.shape[1] * w.shape[2]), axis=2)
             for w in weights[1:-1]
-        ], axis=-1)
-
+        ], axis=-1)# (bs, (len(weights) - 2) * in_features)
+        # (bs, (len(weights) - 2) * in_features + d0 * in_features + dL * in_features)
         pooled_weights = jnp.concatenate((pooled_weights, pooled_first_w, pooled_last_w), axis=-1)
 
         # Concatenate biases
         pooled_biases = jnp.concatenate(
             [self._reduction(b, axis=1) for b in biases[:-1]], axis=-1
-        )
+        )# (bs, (len(biases) - 1) * in_features)
+        # (bs, (len(biases) - 1) * in_features + dL * in_features)
         pooled_biases = jnp.concatenate((pooled_biases, pooled_last_b), axis=-1)
 
         # Combine all features
         pooled_all = jnp.concatenate([pooled_weights, pooled_biases], axis=-1)
-        return self.layer(pooled_all)
+        # (bs, (num layers - 3) * in_features + d0 * in_features + dL * in_features + dL * in_features)
+        for layer in self.mlp_layers:
+            pooled_all = layer(pooled_all)
+        return pooled_all
 
 
 class NaiveInvariantLayer(BaseLayer):

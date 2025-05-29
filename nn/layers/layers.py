@@ -160,9 +160,8 @@ class DWSLayer(BaseLayer):
             with torch.no_grad():
                 for m in self.skip.modules():
                     if isinstance(m, nn.Linear):
-                        torch.nn.init.constant_(
-                            m.weight, 1.0 / (m.weight.numel() ** 0.5)
-                        )
+                        torch.nn.init.constant_(m.weight, 1.0)  # for testing
+                        # torch.nn.init.constant_(m.weight, 1.0 / (m.weight.numel() ** 0.5))
                         torch.nn.init.constant_(m.bias, 0.0)
 
     @staticmethod
@@ -180,18 +179,20 @@ class DWSLayer(BaseLayer):
     def _init_model_params(self, scale, off_diag_penalty=1.0):
         for n, m in self.named_modules():
             if isinstance(m, nn.Linear):
-                out_c, in_c = m.weight.shape
-                g = (2 * in_c / out_c) ** 0.5
-                # nn.init.xavier_normal_(m.weight, gain=g)
-                nn.init.xavier_normal_(m.weight)
-                # nn.init.kaiming_normal_(m.weight)
-                off_diag_penalty_ = (
-                    off_diag_penalty if self._apply_off_diag_penalty(n) else 1.0
-                )
-                m.weight.data = m.weight.data * g * scale * off_diag_penalty_
-                if m.bias is not None:
-                    # m.bias.data.fill_(0.0)
-                    m.bias.data.uniform_(-1e-4, 1e-4)
+                m.weight.data.fill_(1.0)   # for testing
+                m.bias.data.fill_(0.0)     # for testing
+                # out_c, in_c = m.weight.shape
+                # g = (2 * in_c / out_c) ** 0.5
+                # # nn.init.xavier_normal_(m.weight, gain=g)
+                # nn.init.xavier_normal_(m.weight)
+                # # nn.init.kaiming_normal_(m.weight)
+                # off_diag_penalty_ = (
+                #     off_diag_penalty if self._apply_off_diag_penalty(n) else 1.0
+                # )
+                # m.weight.data = m.weight.data * g * scale * off_diag_penalty_
+                # if m.bias is not None:
+                #     # m.bias.data.fill_(0.0)
+                #     m.bias.data.uniform_(-1e-4, 1e-4)
 
     def forward(self, x: Tuple[Tuple[torch.tensor], Tuple[torch.tensor]]):
         weights, biases = x

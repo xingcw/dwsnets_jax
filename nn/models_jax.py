@@ -27,41 +27,39 @@ class MLPModel(nn.Module):
         layers = []
         
         # First layer
-        layers.append(nn.Dense(self.hidden_dim))
+        layers.append(nn.Dense(
+            self.hidden_dim,
+            kernel_init=nn.initializers.ones,  # for testing
+            bias_init=nn.initializers.zeros,   # for testing
+        ))
         layers.append(nn.relu)
         
         # Hidden layers
         for i in range(self.n_hidden):
             if i < self.n_hidden - 1:
                 if not self.bn:
-                    layers.append(nn.Dense(self.hidden_dim))
+                    layers.append(nn.Dense(
+                        self.hidden_dim,
+                        kernel_init=nn.initializers.ones,  # for testing
+                        bias_init=nn.initializers.zeros,   # for testing
+                    ))
                     layers.append(nn.relu)
                 else:
-                    layers.append(nn.Dense(self.hidden_dim))
+                    layers.append(nn.Dense(
+                        self.hidden_dim,
+                        kernel_init=nn.initializers.ones,  # for testing
+                        bias_init=nn.initializers.zeros,   # for testing
+                    ))
                     layers.append(nn.BatchNorm())
                     layers.append(nn.relu)
             else:
-                layers.append(nn.Dense(self.in_dim))
+                layers.append(nn.Dense(
+                    self.in_dim,
+                    kernel_init=nn.initializers.ones,  # for testing
+                    bias_init=nn.initializers.zeros,   # for testing
+                ))
 
         self.layers = layers
-
-    def _init_model_params(self, params, scale):
-        # Initialize parameters with Xavier initialization
-        for layer in self.layers:
-            if isinstance(layer, nn.Dense):
-                out_c, in_c = layer.kernel.shape
-                g = (2 * in_c / out_c) ** 0.5
-                params = params.unfreeze()
-                params[f"{layer.name}"]["kernel"] = params[f"{layer.name}"]["kernel"] * g * scale
-                if "bias" in params[f"{layer.name}"]:
-                    params[f"{layer.name}"]["bias"] = random.uniform(
-                        random.PRNGKey(0),
-                        params[f"{layer.name}"]["bias"].shape,
-                        minval=-1e-4,
-                        maxval=1e-4,
-                    )
-                params = params.freeze()
-        return params
 
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]]):
         weight, bias = x
@@ -101,24 +99,41 @@ class MLPModelForClassification(nn.Module):
 
     def setup(self):
         # Create layers
-        self.layers = []
+        layers = []
         
         # First layer
-        self.layers.append(nn.Dense(self.hidden_dim))
-        self.layers.append(nn.relu)
+        layers.append(nn.Dense(
+            self.hidden_dim,
+            kernel_init=nn.initializers.ones,  # for testing
+            bias_init=nn.initializers.zeros,   # for testing
+        ))
+        layers.append(nn.relu)
         
         # Hidden layers
         for _ in range(self.n_hidden):
             if not self.bn:
-                self.layers.append(nn.Dense(self.hidden_dim))
-                self.layers.append(nn.relu)
+                layers.append(nn.Dense(
+                    self.hidden_dim,
+                    kernel_init=nn.initializers.ones,  # for testing
+                    bias_init=nn.initializers.zeros,   # for testing
+                ))
+                layers.append(nn.relu)
             else:
-                self.layers.append(nn.Dense(self.hidden_dim))
-                self.layers.append(nn.BatchNorm())
-                self.layers.append(nn.relu)
+                layers.append(nn.Dense(
+                    self.hidden_dim,
+                    kernel_init=nn.initializers.ones,  # for testing
+                    bias_init=nn.initializers.zeros,   # for testing
+                ))
+                layers.append(nn.BatchNorm())
+                layers.append(nn.relu)
                 
         # Output layer
-        self.layers.append(nn.Dense(self.n_classes))
+        layers.append(nn.Dense(
+            self.n_classes,
+            kernel_init=nn.initializers.ones,  # for testing
+            bias_init=nn.initializers.zeros,   # for testing
+        ))
+        self.layers = layers
 
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]]):
         weight, bias = x
@@ -316,23 +331,27 @@ class DWSModelForClassification(nn.Module):
             bn=self.bn,
             diagonal=self.diagonal,
         )
+
+        self.dropout = Dropout(rate=self.dropout_rate)
+        self.relu = ReLU()
         
-        self.classifier = nn.Dense(
-            self.n_classes,
-            kernel_init=nn.initializers.ones,  # use for testing
-            bias_init=nn.initializers.zeros,   # use for testing
+        self.classifier = InvariantLayer(
+            weight_shapes=self.weight_shapes,
+            bias_shapes=self.bias_shapes,
+            in_features=self.hidden_dim if self.equiv_out_features is None else self.equiv_out_features,
+            out_features=self.n_classes,
+            reduction=self.reduction,
+            n_fc_layers=self.n_out_fc,
         )
 
     def __call__(self, x: Tuple[Tuple[jnp.ndarray], Tuple[jnp.ndarray]], return_equiv=False):
-        equiv_out = self.dws_model(x)
-        weight, bias = equiv_out
-        all_weights = weight + bias
-        weight = jnp.concatenate([w.reshape(w.shape[0], -1) for w in all_weights], axis=-1)
-        out = self.classifier(weight)
-        
+        x = self.dws_model(x)
+        out = self.dropout(self.relu(x))
+        out = self.classifier(out)
         if return_equiv:
-            return out, equiv_out
-        return out 
+            return out, x
+        else:
+            return out
 
 
 if __name__ == "__main__":

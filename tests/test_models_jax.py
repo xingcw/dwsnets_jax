@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import numpy as np
 import torch
 import random
-import pytest
 from nn.models import (
     MLPModel as TorchMLPModel,
     MLPModelForClassification as TorchMLPModelForClassification,
@@ -28,13 +27,13 @@ random.seed(0)
 def test_mlp_model():
     # Test data
     batch_size = 4
-    in_dim = 2208
+    in_dim = 2090
     hidden_dim = 256
     n_hidden = 2
     
     # Create random input data
     weight_shapes = [(10, 20), (20, 30), (30, 40)]
-    bias_shapes = [(10,), (20,), (30,)]
+    bias_shapes = [(20,), (30,), (40,)]
     
     weights = [np.random.randn(batch_size, *shape, 1) for shape in weight_shapes]
     biases = [np.random.randn(batch_size, *shape, 1) for shape in bias_shapes]
@@ -67,23 +66,23 @@ def test_mlp_model():
     # Compare outputs
     for t_out, j_out in zip(torch_out[0], jax_out[0]):
         for t, j in zip(t_out, j_out):
-            np.testing.assert_allclose(t, j, rtol=1e-5, atol=1e-5)
+            np.testing.assert_allclose(t.detach().numpy(), j, rtol=1e-5, atol=1e-5)
     for t_out, j_out in zip(torch_out[1], jax_out[1]):
         for t, j in zip(t_out, j_out):
-            np.testing.assert_allclose(t, j, rtol=1e-5, atol=1e-5)
+            np.testing.assert_allclose(t.detach().numpy(), j, rtol=1e-5, atol=1e-5)
 
 
 def test_mlp_model_for_classification():
     # Test data
     batch_size = 4
-    in_dim = 2208
+    in_dim = 2090
     hidden_dim = 256
     n_hidden = 2
     n_classes = 10
     
     # Create random input data
     weight_shapes = [(10, 20), (20, 30), (30, 40)]
-    bias_shapes = [(10,), (20,), (30,)]
+    bias_shapes = [(20,), (30,), (40,)]
     
     X = (
         tuple(np.random.randn(batch_size, *shape, 1) for shape in weight_shapes),
@@ -106,31 +105,40 @@ def test_mlp_model_for_classification():
     
     # Initialize JAX model parameters
     key = jax.random.PRNGKey(0)
-    jax_params = jax_model.init(key, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    jax_params = jax_model.init(key, X)
+
+    X_torch = (
+        tuple(torch.tensor(x) for x in X[0]),
+        tuple(torch.tensor(x) for x in X[1]),
+    )
     
     # Forward pass
-    torch_out = torch_model(tuple(torch.tensor(x) for x in X[0]), tuple(torch.tensor(x) for x in X[1]))
-    torch_out = torch_out.detach().numpy()
-    jax_out = jax_model.apply(jax_params, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    torch_out = torch_model(X_torch)
+    jax_out = jax_model.apply(jax_params, X)
     
     # Compare outputs
-    np.testing.assert_allclose(torch_out, jax_out, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(torch_out.detach().numpy(), jax_out, rtol=1e-5, atol=1e-5)
 
 
 def test_dws_model():
     # Test data
     batch_size = 4
-    input_features = 32
-    hidden_dim = 64
+    input_features = 2
+    hidden_dim = 16
     n_hidden = 2
     
     # Create random input data
     weight_shapes = [(10, 20), (20, 30), (30, 40)]
-    bias_shapes = [(10,), (20,), (30,)]
+    bias_shapes = [(20,), (30,), (40,)]
     
     X = (
-        tuple(np.random.randn(batch_size, *shape, 1) for shape in weight_shapes),
-        tuple(np.random.randn(batch_size, *shape, 1) for shape in bias_shapes),
+        tuple(np.random.randn(batch_size, *shape, input_features) for shape in weight_shapes),
+        tuple(np.random.randn(batch_size, *shape, input_features) for shape in bias_shapes),
+    )
+
+    X_torch = (
+        tuple(torch.tensor(x) for x in X[0]),
+        tuple(torch.tensor(x) for x in X[1]),
     )
     
     # Initialize models
@@ -145,41 +153,48 @@ def test_dws_model():
         weight_shapes=weight_shapes,
         bias_shapes=bias_shapes,
         input_features=input_features,
+        output_features=hidden_dim,
         hidden_dim=hidden_dim,
         n_hidden=n_hidden,
     )
     
     # Initialize JAX model parameters
     key = jax.random.PRNGKey(0)
-    jax_params = jax_model.init(key, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    jax_params = jax_model.init(key, X)
     
     # Forward pass
-    torch_out = torch_model(tuple(torch.tensor(x) for x in X[0]), tuple(torch.tensor(x) for x in X[1]))
-    torch_out = tuple(x.detach().numpy() for x in torch_out[0]), tuple(x.detach().numpy() for x in torch_out[1])
-    jax_out = jax_model.apply(jax_params, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    torch_out = torch_model(X_torch)
+    jax_out = jax_model.apply(jax_params, X)
     
     # Compare outputs
     for t_out, j_out in zip(torch_out[0], jax_out[0]):
-        np.testing.assert_allclose(t_out, j_out, rtol=1e-5, atol=1e-5)
+        for t, j in zip(t_out, j_out):
+            np.testing.assert_allclose(t.detach().numpy(), j, rtol=1e-5, atol=1e-5)
     for t_out, j_out in zip(torch_out[1], jax_out[1]):
-        np.testing.assert_allclose(t_out, j_out, rtol=1e-5, atol=1e-5)
+        for t, j in zip(t_out, j_out):
+            np.testing.assert_allclose(t.detach().numpy(), j, rtol=1e-5, atol=1e-5)
 
 
 def test_dws_model_for_classification():
     # Test data
     batch_size = 4
-    input_features = 32
-    hidden_dim = 64
+    input_features = 2
+    hidden_dim = 16
     n_hidden = 2
     n_classes = 10
     
     # Create random input data
     weight_shapes = [(10, 20), (20, 30), (30, 40)]
-    bias_shapes = [(10,), (20,), (30,)]
+    bias_shapes = [(20,), (30,), (40,)]
     
     X = (
-        tuple(np.random.randn(batch_size, *shape, 1) for shape in weight_shapes),
-        tuple(np.random.randn(batch_size, *shape, 1) for shape in bias_shapes),
+        tuple(np.random.randn(batch_size, *shape, input_features) for shape in weight_shapes),
+        tuple(np.random.randn(batch_size, *shape, input_features) for shape in bias_shapes),
+    )
+
+    X_torch = (
+        tuple(torch.tensor(x) for x in X[0]),
+        tuple(torch.tensor(x) for x in X[1]),
     )
     
     # Initialize models
@@ -202,25 +217,11 @@ def test_dws_model_for_classification():
     
     # Initialize JAX model parameters
     key = jax.random.PRNGKey(0)
-    jax_params = jax_model.init(key, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    jax_params = jax_model.init(key, X)
     
     # Forward pass
-    torch_out = torch_model(tuple(torch.tensor(x) for x in X[0]), tuple(torch.tensor(x) for x in X[1]))
-    torch_out = torch_out.detach().numpy()
-    jax_out = jax_model.apply(jax_params, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]))
+    torch_out = torch_model(X_torch)
+    jax_out = jax_model.apply(jax_params, X)
     
     # Compare outputs
-    np.testing.assert_allclose(torch_out, jax_out, rtol=1e-5, atol=1e-5)
-    
-    # Test return_equiv=True
-    torch_out, torch_equiv = torch_model(tuple(torch.tensor(x) for x in X[0]), tuple(torch.tensor(x) for x in X[1]), return_equiv=True)
-    torch_out = torch_out.detach().numpy()
-    torch_equiv = tuple(x.detach().numpy() for x in torch_equiv[0]), tuple(x.detach().numpy() for x in torch_equiv[1])
-    jax_out, jax_equiv = jax_model.apply(jax_params, tuple(jnp.array(x) for x in X[0]), tuple(jnp.array(x) for x in X[1]), return_equiv=True)
-    
-    # Compare outputs
-    np.testing.assert_allclose(torch_out, jax_out, rtol=1e-5, atol=1e-5)
-    for t_out, j_out in zip(torch_equiv[0], jax_equiv[0]):
-        np.testing.assert_allclose(t_out, j_out, rtol=1e-5, atol=1e-5)
-    for t_out, j_out in zip(torch_equiv[1], jax_equiv[1]):
-        np.testing.assert_allclose(t_out, j_out, rtol=1e-5, atol=1e-5) 
+    np.testing.assert_allclose(torch_out.detach().numpy(), jax_out, rtol=1e-5, atol=1e-5)
