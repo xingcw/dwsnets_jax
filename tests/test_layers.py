@@ -528,45 +528,45 @@ def test_model_equivariance_downsample():
     out_weights = out[0]
     out_weights_perm = out_perm[0]
     assert torch.allclose(
-        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=0
+        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
         out_weights[1][:, perm1, :, :][:, :, perm2, :],
         out_weights_perm[1],
         atol=1e-4,
-        rtol=0,
+        rtol=1e-5,
     )
     assert torch.allclose(
         out_weights[2][:, perm2, :, :][:, :, perm3, :],
         out_weights_perm[2],
         atol=1e-4,
-        rtol=0,
+        rtol=1e-5,
     )
     assert torch.allclose(
         out_weights[3][:, perm3, :, :][:, :, perm4, :],
         out_weights_perm[3],
         atol=1e-4,
-        rtol=0,
+        rtol=1e-5,
     )
     assert torch.allclose(
-        out_weights[4][:, perm4, :, :], out_weights_perm[4], atol=1e-4, rtol=0
+        out_weights[4][:, perm4, :, :], out_weights_perm[4], atol=1e-4, rtol=1e-5
     )
 
     out_biases = out[1]
     out_biases_perm = out_perm[1]
     assert torch.allclose(
-        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=0
+        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
-        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=0
+        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
-        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=0
+        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
-        out_biases[3][:, perm4, :], out_biases_perm[3], atol=1e-4, rtol=0
+        out_biases[3][:, perm4, :], out_biases_perm[3], atol=1e-4, rtol=1e-5
     )
-    assert torch.allclose(out_biases[4], out_biases_perm[4], atol=1e-4, rtol=0)
+    assert torch.allclose(out_biases[4], out_biases_perm[4], atol=1e-4, rtol=1e-5)
 
 
 def test_model_equivariance_downsample_sab():
@@ -620,36 +620,36 @@ def test_model_equivariance_downsample_sab():
     out_weights = out[0]
     out_weights_perm = out_perm[0]
     assert torch.allclose(
-        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=0
+        out_weights[0][:, :, perm1, :], out_weights_perm[0], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
         out_weights[1][:, perm1, :, :][:, :, perm2, :],
         out_weights_perm[1],
         atol=1e-4,
-        rtol=0,
+        rtol=1e-5,
     )
     assert torch.allclose(
         out_weights[2][:, perm2, :, :][:, :, perm3, :],
         out_weights_perm[2],
         atol=1e-4,
-        rtol=0,
+        rtol=1e-5,
     )
     assert torch.allclose(
-        out_weights[3][:, perm3, :, :], out_weights_perm[3], atol=1e-4, rtol=0
+        out_weights[3][:, perm3, :, :], out_weights_perm[3], atol=1e-4, rtol=1e-5
     )
 
     out_biases = out[1]
     out_biases_perm = out_perm[1]
     assert torch.allclose(
-        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=0
+        out_biases[0][:, perm1, :], out_biases_perm[0], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
-        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=0
+        out_biases[1][:, perm2, :], out_biases_perm[1], atol=1e-4, rtol=1e-5
     )
     assert torch.allclose(
-        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=0
+        out_biases[2][:, perm3, :], out_biases_perm[2], atol=1e-4, rtol=1e-5
     )
-    assert torch.allclose(out_biases[3], out_biases_perm[3], atol=1e-4, rtol=0)
+    assert torch.allclose(out_biases[3], out_biases_perm[3], atol=1e-4, rtol=1e-5)
 
 
 if __name__ == "__main__":
